@@ -69,6 +69,7 @@ class AnimationLoop {
   }
 
   hasAnimationFunctions() {
+    const self = _(this)
     return self.animationFnsBefore.size ||
       self.animationFns.size ||
       self.animationFnsAfter.size
@@ -208,4 +209,4 @@ class ChildAnimationLoop extends AnimationLoop {
   }
 }
 
-export const version = '1.0.3'
+export const version = '1.0.2'
