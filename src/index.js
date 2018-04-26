@@ -134,7 +134,7 @@ class AnimationLoop {
     const self = _(this)
 
     const fn = () => {
-      this.tick( self.clock.getDelta() )
+      this._tick( self.clock.getDelta() )
       self.animationFrame = requestAnimationFrame( fn )
     }
 
@@ -146,7 +146,7 @@ class AnimationLoop {
     cancelAnimationFrame(self.animationFrame)
   }
 
-  tick( dt ) {
+  _tick( dt ) {
     const self = _(this)
 
     self.elapsed += dt
@@ -162,6 +162,12 @@ class AnimationLoop {
 
     for (const fn of Array.from(self.baseFns))
       if ( fn(dt, self.elapsed) === false ) this.removeBaseFn( fn )
+  }
+
+  forceTick() {
+    // add an empty function that removes itself on the next tick, forcing a
+    // tick of all other animation base functions.
+    this.addAnimationFn(() => false)
   }
 
   addChildLoop( child ) {
@@ -197,7 +203,7 @@ class ChildAnimationLoop extends AnimationLoop {
       throw new Error('ChildAnimationLoop must have parent AnimationLoop before being started')
 
     const fn = ( dt, elapsed ) => {
-      this.tick( dt )
+      this._tick( dt )
     }
 
     self.animationFrame = self.parentLoop.addAnimationFn( fn )
@@ -209,4 +215,4 @@ class ChildAnimationLoop extends AnimationLoop {
   }
 }
 
-export const version = '1.0.4'
+export const version = '1.0.2'
