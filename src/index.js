@@ -22,6 +22,7 @@ class AnimationLoop {
 
     self.started = false
     self.paused = false
+    self.ticking = false
 
     self.childLoops = new Set()
   }
@@ -133,6 +134,10 @@ class AnimationLoop {
 
     const self = _(this)
 
+    if ( self.ticking ) return
+
+    self.ticking = true
+
     const fn = () => {
       this._tick( self.clock.getDelta() )
       self.animationFrame = requestAnimationFrame( fn )
@@ -143,6 +148,7 @@ class AnimationLoop {
 
   _stopTicking() {
     const self = _(this)
+    self.ticking = false
     cancelAnimationFrame(self.animationFrame)
   }
 
@@ -215,4 +221,4 @@ class ChildAnimationLoop extends AnimationLoop {
   }
 }
 
-export const version = '1.1.0'
+export const version = '1.0.2'
