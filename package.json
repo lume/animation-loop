@@ -1,0 +1,49 @@
+{
+  "name": "animation-loop",
+  "version": "0.0.0",
+  "description": "Easily make and manage animation loops.",
+  "main": "index.js",
+  "scripts": {
+    "clean": "builder run build:clean",
+    "build": "builder run build:prod",
+    "dev": "builder run build:dev",
+    "test": "builder run npm:test",
+    "preversion": "builder run npm:preversion",
+    "version": "builder run npm:version",
+    "postversion": "builder run npm:postversion"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+ssh://git@github.com/trusktr/animation-loop.git"
+  },
+  "author": "Joe Pea <joe@trusktr.io>",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/trusktr/animation-loop/issues"
+  },
+  "homepage": "http://github.com/trusktr/animation-loop#readme",
+  "dependencies": {
+    "three": "^0.92.0"
+  },
+  "devDependencies": {
+    "builder": "^3.2.3",
+    "builder-js-package": "trusktr/builder-js-package"
+  },
+  "keywords": [
+    "animation",
+    "render loop",
+    "render-loop",
+    "transitions",
+    "requestAnimationFrame",
+    "request-animation-frame",
+    "raf",
+    "webgl",
+    "canvas",
+    "graphics",
+    "gaming",
+    "game-engine",
+    "game engine",
+    "three.js",
+    "threejs"
+  ]
+}
