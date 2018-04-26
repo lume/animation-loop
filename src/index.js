@@ -8,10 +8,7 @@ class AnimationLoop {
 
   constructor() {
 
-    // `_(this)` gives us access private properties (in the same sense as
-    // private members in C++) of this AnimationLoop instance, without leaking
-    // memory, and while still being able to use the properties across class
-    // methods unlike closure-based private properties inside constructors.
+    // `_(this)` gives us access to truly "private" members
     const self = _(this)
 
     self.animationFnsBefore = new Set()
@@ -33,10 +30,12 @@ class AnimationLoop {
   get elapsed() { return _(this).elapsed }
   get started() { return _(this).started }
   get paused() { return _(this).paused }
+  get running() { return _(this).started && !_(this).paused }
 
   addAnimationFnBefore(fn) {
     const self = _(this)
     if (typeof fn === 'function') self.animationFnsBefore.add(fn)
+    if (this.running) this._startTicking()
     return fn
   }
 
@@ -45,12 +44,10 @@ class AnimationLoop {
     self.animationFnsBefore.delete(fn)
   }
 
-  // animation functions are called repeatedly while they are added to an
-  // AnimationLoop instance. They must be removed in order to stop them from
-  // being called repeatedly.
   addAnimationFn(fn) {
     const self = _(this)
     if (typeof fn === 'function') self.animationFns.add(fn)
+    if (this.running) this._startTicking()
     return fn
   }
 
@@ -62,12 +59,19 @@ class AnimationLoop {
   addAnimationFnAfter(fn) {
     const self = _(this)
     if (typeof fn === 'function') self.animationFnsAfter.add(fn)
+    if (this.running) this._startTicking()
     return fn
   }
 
   removeAnimationFnAfter(fn) {
     const self = _(this)
     self.animationFnsAfter.delete(fn)
+  }
+
+  hasAnimationFunctions() {
+    return self.animationFnsBefore.size ||
+      self.animationFns.size ||
+      self.animationFnsAfter.size
   }
 
   // base functions are executed after regular functions. They aren't repeated
@@ -124,6 +128,8 @@ class AnimationLoop {
   }
 
   _startTicking() {
+    if ( !this.hasAnimationFunctions() ) return
+
     const self = _(this)
 
     const fn = () => {
@@ -152,6 +158,9 @@ class AnimationLoop {
 
     for (const fn of Array.from(self.animationFnsAfter))
       if ( fn(dt, self.elapsed) === false ) this.removeAnimationFnAfter( fn )
+
+    for (const fn of Array.from(self.baseFns))
+      if ( fn(dt, self.elapsed) === false ) this.removeBaseFn( fn )
   }
 
   addChildLoop( child ) {
