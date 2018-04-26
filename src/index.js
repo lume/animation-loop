@@ -144,13 +144,13 @@ class AnimationLoop {
 
     self.elapsed += dt
 
-    for (const fn of self.animationFnsBefore)
+    for (const fn of Array.from(self.animationFnsBefore))
       if ( fn(dt, self.elapsed) === false ) this.removeAnimationFnBefore( fn )
 
-    for (const fn of self.animationFns)
+    for (const fn of Array.from(self.animationFns))
       if ( fn(dt, self.elapsed) === false ) this.removeAnimationFn( fn )
 
-    for (const fn of self.animationFnsAfter)
+    for (const fn of Array.from(self.animationFnsAfter))
       if ( fn(dt, self.elapsed) === false ) this.removeAnimationFnAfter( fn )
   }
 
