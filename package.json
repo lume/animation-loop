@@ -1,6 +1,6 @@
 {
   "name": "animation-loop",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "description": "Easily make and manage animation loops.",
   "main": "index.js",
   "scripts": {
