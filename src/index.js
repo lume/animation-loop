@@ -18,6 +18,9 @@ class AnimationLoop {
     self.animationFrame = null
 
     self.elapsed = 0
+    self.lastTick = 0
+    self.interval = null
+    self.intervals = -1
     self.clock = new Clock()
 
     self.started = false
@@ -158,6 +161,29 @@ class AnimationLoop {
 
     self.elapsed += dt
 
+    if ( !self.interval ) {
+
+      this._callAnimationFunctions( dt )
+      return
+
+    }
+
+    const numIntervals = Math.floor( self.elapsed / self.interval )
+
+    if ( numIntervals > self.intervals ) {
+
+      dt = self.elapsed - self.lastTick
+      this._callAnimationFunctions( dt )
+      self.intervals = numIntervals
+      self.lastTick = self.elapsed
+
+    }
+
+  }
+
+  _callAnimationFunctions( dt ) {
+    const self = _(this)
+
     for (const fn of Array.from(self.animationFnsBefore))
       if ( fn(dt, self.elapsed) === false ) this.removeAnimationFnBefore( fn )
 
@@ -170,6 +196,9 @@ class AnimationLoop {
     for (const fn of Array.from(self.baseFns))
       if ( fn(dt, self.elapsed) === false ) this.removeBaseFn( fn )
   }
+
+  get interval() { return _(this).interval }
+  set interval(value) { _(this).interval = value }
 
   forceTick() {
     // add an empty function that removes itself on the next tick, forcing a
