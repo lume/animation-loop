@@ -141,6 +141,7 @@ class AnimationLoop {
     const fn = () => {
       this._tick( self.clock.getDelta() )
       self.animationFrame = requestAnimationFrame( fn )
+      if ( !this.hasAnimationFunctions() ) this._stopTicking()
     }
 
     self.animationFrame = requestAnimationFrame( fn )
@@ -168,8 +169,6 @@ class AnimationLoop {
 
     for (const fn of Array.from(self.baseFns))
       if ( fn(dt, self.elapsed) === false ) this.removeBaseFn( fn )
-
-    if ( !this.hasAnimationFunctions() ) this._stopTicking()
   }
 
   forceTick() {
