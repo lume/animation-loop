@@ -1,4 +1,4 @@
-import { Clock } from 'three'
+import Clock from './Clock'
 
 import Privates from './Privates'
 const _ = new Privates()
@@ -198,3 +198,5 @@ class ChildAnimationLoop extends AnimationLoop {
     self.parentLoop.removeAnimationFn( self.animationFrame )
   }
 }
+
+export const version = '0.0.0'
