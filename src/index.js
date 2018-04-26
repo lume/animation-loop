@@ -251,4 +251,4 @@ class ChildAnimationLoop extends AnimationLoop {
   }
 }
 
-export const version = '1.1.3'
+export const version = '1.2.0'
