@@ -15,7 +15,9 @@ class AnimationLoop {
     self.animationFns = new Set()
     self.animationFnsAfter = new Set()
     self.baseFns = new Set()
+
     self.animationFrame = null
+    self.needsToRequestEachFrame = true
 
     self.elapsed = 0
     self.lastTick = 0
@@ -26,8 +28,11 @@ class AnimationLoop {
     self.started = false
     self.paused = false
     self.ticking = false
+    self.forcedTick = false
 
     self.childLoops = new Set()
+
+    this._tick = this._tick.bind(this)
   }
 
   // read-only
@@ -35,6 +40,10 @@ class AnimationLoop {
   get started() { return _(this).started }
   get paused() { return _(this).paused }
   get running() { return _(this).started && !_(this).paused }
+  get ticking() { return _(this).ticking }
+
+  get interval() { return _(this).interval }
+  set interval(value) { _(this).interval = value }
 
   addAnimationFnBefore(fn) {
     const self = _(this)
@@ -79,13 +88,6 @@ class AnimationLoop {
       self.animationFnsAfter.size
   }
 
-  // base functions are executed after regular functions. They aren't repeated
-  // on their own, they are only fired after animation functions. If there are
-  // no animation functions, then base functions don't fire even if they remain
-  // added to the AnimationLoop instance. This is useful for adding tasks that
-  // always need to be triggered after updating animation values, for example
-  // in Three.js we need to always call renderer.render(scene, camera) to
-  // update the drawing.
   addBaseFn(fn) {
     const self = _(this)
     if (typeof fn === 'function') self.baseFns.add(fn)
@@ -140,44 +142,56 @@ class AnimationLoop {
     if ( self.ticking ) return
 
     self.ticking = true
-
-    const fn = () => {
-      this._tick( self.clock.getDelta() )
-      self.animationFrame = requestAnimationFrame( fn )
-      if ( !this.hasAnimationFunctions() ) this._stopTicking()
-    }
-
-    self.animationFrame = requestAnimationFrame( fn )
+    self.animationFrame = this._requestFrame( this._tick )
   }
 
   _stopTicking() {
     const self = _(this)
     self.ticking = false
-    cancelAnimationFrame(self.animationFrame)
+    this._cancelFrame(self.animationFrame)
   }
 
-  _tick( dt ) {
+  _requestFrame( fn ) {
+    return requestAnimationFrame( fn )
+  }
+
+  _cancelFrame( fn ) {
+    cancelAnimationFrame( fn )
+  }
+
+  _tick() {
     const self = _(this)
+
+    let dt = self.clock.getDelta()
 
     self.elapsed += dt
 
     if ( !self.interval ) {
 
       this._callAnimationFunctions( dt )
-      return
 
     }
 
-    const numIntervals = Math.floor( self.elapsed / self.interval )
+    else {
 
-    if ( numIntervals > self.intervals ) {
+      const numIntervals = Math.floor( self.elapsed / self.interval )
 
-      dt = self.elapsed - self.lastTick
-      this._callAnimationFunctions( dt )
-      self.intervals = numIntervals
-      self.lastTick = self.elapsed
+      if ( numIntervals > self.intervals ) {
+
+        dt = self.elapsed - self.lastTick
+        self.intervals = numIntervals
+        self.lastTick = self.elapsed
+
+        this._callAnimationFunctions( dt )
+
+      }
 
     }
+
+    if ( self.needsToRequestEachFrame )
+      self.animationFrame = this._requestFrame( this._tick )
+
+    if ( !this.hasAnimationFunctions() ) this._stopTicking()
 
   }
 
@@ -197,13 +211,13 @@ class AnimationLoop {
       if ( fn(dt, self.elapsed) === false ) this.removeBaseFn( fn )
   }
 
-  get interval() { return _(this).interval }
-  set interval(value) { _(this).interval = value }
-
+  // add an empty function that removes itself on the next tick, forcing a
+  // tick of all other animation base functions.
   forceTick() {
-    // add an empty function that removes itself on the next tick, forcing a
-    // tick of all other animation base functions.
-    this.addAnimationFn(() => false)
+    const self = _(this)
+    if (self.forcedTick) return
+    self.forcedTick = true
+    this.addAnimationFn(() => self.forcedTick = false)
   }
 
   addChildLoop( child ) {
@@ -230,24 +244,17 @@ class ChildAnimationLoop extends AnimationLoop {
     super()
     const self = _(this)
     self.parentLoop = null
+    self.needsToRequestEachFrame = false
   }
 
-  _startTicking() {
+  _requestFrame( fn ) {
     const self = _(this)
-
-    if (! self.parentLoop )
-      throw new Error('ChildAnimationLoop must have parent AnimationLoop before being started')
-
-    const fn = ( dt, elapsed ) => {
-      this._tick( dt )
-    }
-
-    self.animationFrame = self.parentLoop.addAnimationFn( fn )
+    return self.parentLoop.addAnimationFn( fn )
   }
 
-  _stopTicking() {
+  _cancelFrame( fn ) {
     const self = _(this)
-    self.parentLoop.removeAnimationFn( self.animationFrame )
+    self.parentLoop.removeAnimationFn( fn )
   }
 }
 
