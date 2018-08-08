@@ -1,15 +1,13 @@
 import Clock from './Clock'
+import Class from 'lowclass'
 
-import Privates from './Privates'
-const _ = new Privates()
-
-export
-class AnimationLoop {
+export const AnimationLoop =
+Class('AnimationLoop', ({Public, Protected, Private}) => ({
 
     constructor() {
 
-        // `_(this)` gives us access to truly "private" members
-        const self = _(this)
+        // `Private(this)` gives us access to truly "private" members
+        const self = Private(this)
 
         self.animationFnsBefore = new Set()
         self.animationFns = new Set()
@@ -17,7 +15,7 @@ class AnimationLoop {
         self.baseFns = new Set()
 
         self.animationFrame = null
-        self.needsToRequestEachFrame = true
+        Protected(this).needsToRequestEachFrame = true
 
         self.elapsed = 0
         self.lastTick = 0
@@ -29,78 +27,74 @@ class AnimationLoop {
         self.paused = false
         self.ticking = false
         self.forcedTick = false
-
-        self.childLoops = new Set()
-
-        this._tick = this._tick.bind(this)
-    }
+    },
 
     // read-only
-    get elapsed() { return _(this).elapsed }
-    get started() { return _(this).started }
-    get paused() { return _(this).paused }
-    get running() { return _(this).started && !_(this).paused }
-    get ticking() { return _(this).ticking }
+    get elapsed() { return Private(this).elapsed },
+    get started() { return Private(this).started },
+    get paused() { return Private(this).paused },
+    get running() { return Private(this).started && !Private(this).paused },
+    get ticking() { return Private(this).ticking },
 
-    get interval() { return _(this).interval }
-    set interval(value) { _(this).interval = value }
+    get interval() { return Private(this).interval },
+    set interval(value) { Private(this).interval = value },
 
     addAnimationFnBefore(fn) {
-        const self = _(this)
+        const self = Private(this)
         if (typeof fn === 'function') self.animationFnsBefore.add(fn)
-        if (this.running) this._startTicking()
+        if (this.running) self._startTicking()
         return fn
-    }
+    },
 
     removeAnimationFnBefore(fn) {
-        const self = _(this)
+        const self = Private(this)
         self.animationFnsBefore.delete(fn)
-    }
+    },
 
     addAnimationFn(fn) {
-        const self = _(this)
+        const self = Private(this)
         if (typeof fn === 'function') self.animationFns.add(fn)
-        if (this.running) this._startTicking()
+        if (this.running) self._startTicking()
         return fn
-    }
+    },
 
     removeAnimationFn(fn) {
-        const self = _(this)
+        const self = Private(this)
         self.animationFns.delete(fn)
-    }
+    },
 
     addAnimationFnAfter(fn) {
-        const self = _(this)
+        const self = Private(this)
         if (typeof fn === 'function') self.animationFnsAfter.add(fn)
-        if (this.running) this._startTicking()
+        if (this.running) self._startTicking()
         return fn
-    }
+    },
 
     removeAnimationFnAfter(fn) {
-        const self = _(this)
+        const self = Private(this)
         self.animationFnsAfter.delete(fn)
-    }
+    },
 
     hasAnimationFunctions() {
-        const self = _(this)
+        const self = Private(this)
         return self.animationFnsBefore.size ||
             self.animationFns.size ||
             self.animationFnsAfter.size
-    }
+    },
 
     addBaseFn(fn) {
-        const self = _(this)
+        const self = Private(this)
         if (typeof fn === 'function') self.baseFns.add(fn)
         return fn
-    }
+    },
 
     removeBaseFn(fn) {
-        const self = _(this)
+        const self = Private(this)
         self.baseFns.delete(fn)
-    }
+    },
 
     start() {
-        const self = _(this)
+        const self = Private(this)
 
         // do nothing if already running
         if ( self.started && !self.paused ) return
@@ -108,11 +102,11 @@ class AnimationLoop {
         self.started = true
         self.paused = false
         self.clock.start()
-        this._startTicking()
-    }
+        self._startTicking()
+    },
 
     stop() {
-        const self = _(this)
+        const self = Private(this)
 
         // do nothing if already stopped
         if (!self.started) return
@@ -120,142 +114,158 @@ class AnimationLoop {
         self.started = false
         self.elapsed = 0
         self.clock.stop()
-        this._stopTicking()
-    }
+        self._stopTicking()
+    },
 
     pause() {
-        const self = _(this)
+        const self = Private(this)
 
         // only pause if already running, otherwise do nothing
         if ( self.started && !self.paused ) {
             self.paused = true
             self.clock.stop()
-            this._stopTicking()
+            self._stopTicking()
         }
-    }
-
-    _startTicking() {
-        if ( !this.hasAnimationFunctions() ) return
-
-        const self = _(this)
-
-        if ( self.ticking ) return
-
-        self.ticking = true
-        self.animationFrame = this._requestFrame( this._tick )
-    }
-
-    _stopTicking() {
-        const self = _(this)
-        self.ticking = false
-        this._cancelFrame(self.animationFrame)
-    }
-
-    _requestFrame( fn ) {
-        return requestAnimationFrame( fn )
-    }
-
-    _cancelFrame( fn ) {
-        cancelAnimationFrame( fn )
-    }
-
-    _tick() {
-        const self = _(this)
-
-        let dt = self.clock.getDelta()
-
-        self.elapsed += dt
-
-        if ( !self.interval ) {
-
-            this._callAnimationFunctions( dt )
-
-        }
-
-        else {
-
-            const numIntervals = Math.floor( self.elapsed / self.interval )
-
-            if ( numIntervals > self.intervals ) {
-
-                dt = self.elapsed - self.lastTick
-                self.intervals = numIntervals
-                self.lastTick = self.elapsed
-
-                this._callAnimationFunctions( dt )
-
-            }
-
-        }
-
-        if ( self.needsToRequestEachFrame )
-            self.animationFrame = this._requestFrame( this._tick )
-
-        if ( !this.hasAnimationFunctions() ) this._stopTicking()
-
-    }
-
-    _callAnimationFunctions( dt ) {
-        const self = _(this)
-
-        for (const fn of Array.from(self.animationFnsBefore))
-            if ( fn(dt, self.elapsed) === false ) this.removeAnimationFnBefore( fn )
-
-        for (const fn of Array.from(self.animationFns))
-            if ( fn(dt, self.elapsed) === false ) this.removeAnimationFn( fn )
-
-        for (const fn of Array.from(self.animationFnsAfter))
-            if ( fn(dt, self.elapsed) === false ) this.removeAnimationFnAfter( fn )
-
-        for (const fn of Array.from(self.baseFns))
-            if ( fn(dt, self.elapsed) === false ) this.removeBaseFn( fn )
-    }
+    },
 
     // add an empty function that removes itself on the next tick, forcing a
     // tick of all other animation base functions.
     forceTick() {
-        const self = _(this)
+        const self = Private(this)
         if (self.forcedTick) return
         self.forcedTick = true
         this.addAnimationFn(() => self.forcedTick = false)
-    }
+    },
 
-    addChildLoop( child ) {
-        const self = _(this)
-        _(child).parentLoop = this
-        self.childLoops.add( child )
-    }
+    addChildLoop() {
+        return new ChildAnimationLoop(this)
+    },
 
     removeChildLoop( child ) {
-        const self = _(this)
-        _(child).parentLoop = null
-        self.childLoops.delete( child )
-    }
+        Protected(child)._dispose()
+    },
 
-}
+    protected: {
+        _requestFrame() {
+            const pro = Protected(this)
+            return requestAnimationFrame( () => pro._tick() )
+        },
+
+        _cancelFrame( frame ) {
+            cancelAnimationFrame( frame )
+        },
+
+        _dispose() {
+            Public(this).stop()
+            Private(this)._clearFunctions()
+        },
+
+        _tick() {
+            const self = Private(this)
+
+            let dt = self.clock.getDelta()
+
+            self.elapsed += dt
+
+            if ( !self.interval ) {
+
+                self._callAnimationFunctions( dt )
+
+            }
+
+            else {
+
+                const numIntervals = Math.floor( self.elapsed / self.interval )
+
+                if ( numIntervals > self.intervals ) {
+
+                    dt = self.elapsed - self.lastTick
+                    self.intervals = numIntervals
+                    self.lastTick = self.elapsed
+
+                    self._callAnimationFunctions( dt )
+
+                }
+
+            }
+
+            if ( Protected(this).needsToRequestEachFrame )
+                self.animationFrame = Protected(this)._requestFrame()
+
+            if ( !Public(this).hasAnimationFunctions() ) self._stopTicking()
+
+        },
+    },
+
+    private: {
+        _clearFunctions() {
+            this.animationFnsBefore.clear()
+            this.animationFns.clear()
+            this.animationFnsAfter.clear()
+            this.baseFns.clear()
+        },
+
+        _startTicking() {
+            if ( !Public(this).hasAnimationFunctions() ) return
+
+            const self = Private(this)
+
+            if ( self.ticking ) return
+
+            self.ticking = true
+            self.animationFrame = Protected(this)._requestFrame()
+        },
+
+        _stopTicking() {
+            const self = Private(this)
+            self.ticking = false
+            Protected(this)._cancelFrame(self.animationFrame)
+        },
+
+        _callAnimationFunctions( dt ) {
+            for (const fn of Array.from(this.animationFnsBefore))
+                if ( fn(dt, this.elapsed) === false ) Public(this).removeAnimationFnBefore( fn )
+
+            for (const fn of Array.from(this.animationFns))
+                if ( fn(dt, this.elapsed) === false ) Public(this).removeAnimationFn( fn )
+
+            for (const fn of Array.from(this.animationFnsAfter))
+                if ( fn(dt, this.elapsed) === false ) Public(this).removeAnimationFnAfter( fn )
+
+            for (const fn of Array.from(this.baseFns))
+                if ( fn(dt, this.elapsed) === false ) Public(this).removeBaseFn( fn )
+        },
+    },
+
+}))
 
 export default AnimationLoop
 
 // Child loops hook into parent animationFns instead of requestAnimationFrame,
 // so that there's a single rAF loop at the root AnimationLoop.
-export
-class ChildAnimationLoop extends AnimationLoop {
-    constructor() {
-        super()
-        const self = _(this)
-        self.parentLoop = null
-        self.needsToRequestEachFrame = false
-    }
+const ChildAnimationLoop =
+Class('ChildAnimationLoop').extends(AnimationLoop, ({Protected, Super}) => ({
+    constructor(parentLoop) {
+        Super(this).constructor()
+        Protected(this).parentLoop = parentLoop
+        Protected(this).needsToRequestEachFrame = false
+    },
 
-    _requestFrame( fn ) {
-        const self = _(this)
-        return self.parentLoop.addAnimationFn( fn )
-    }
+    protected: {
+        _requestFrame() {
+            const pro = Protected(this)
+            return this.parentLoop.addAnimationFn( () => pro._tick() )
+        },
 
-    _cancelFrame( fn ) {
-        const self = _(this)
-        self.parentLoop.removeAnimationFn( fn )
-    }
-}
+        _cancelFrame( frame ) {
+            this.parentLoop.removeAnimationFn( frame )
+        },
+
+        _dispose() {
+            Super(this)._dispose()
+            this.parentLoop = null
+        },
+    },
+}))
 
 export const version = '1.3.0'

@@ -23,7 +23,8 @@
   },
   "homepage": "http://github.com/trusktr/animation-loop#readme",
   "dependencies": {
-    "babel-runtime": "^6.26.0"
+    "@babel/runtime": "7.0.0-beta.46",
+    "lowclass": "^4.2.1"
   },
   "devDependencies": {
     "builder": "^3.2.3",
